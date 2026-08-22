@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jsdoc → md</title>
+    <style>
+        :root {
+            --paper: #EFEAE0;
+            --paper-dim: #E4DDCE;
+            --ink: #211D17;
+            --ink-dim: #6b6353;
+            --ribbon: #A83A32;
+            --ribbon-dim: #c8877f;
+            --rule: #cfc6b2;
+            --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+            --serif: "IBM Plex Serif", Georgia, serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--mono);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        header {
+            padding: 22px 28px 14px;
+            border-bottom: 2px solid var(--ink);
+        }
+
+        header h1 {
+            font-family: var(--serif);
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0 0 4px;
+            letter-spacing: 0.2px;
+        }
+
+        header h1 .slash {
+            color: var(--ribbon);
+        }
+
+        header p {
+            margin: 0;
+            color: var(--ink-dim);
+            font-size: 12.5px;
+            max-width: 64ch;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: start;
+        }
+
+        main>section:nth-child(2) {
+            border-left: 1px solid var(--rule);
+        }
+
+        @media (max-width:860px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            main>section:nth-child(2) {
+                border-left: none;
+                border-top: 1px solid var(--rule);
+            }
+        }
+
+        section {
+            background: var(--paper);
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        #dropzone {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--rule);
+            flex-wrap: wrap;
+        }
+
+        #source-panel-head {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: var(--paper);
+        }
+
+        .panel-head .label {
+            font-family: var(--serif);
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--ink-dim);
+        }
+
+        .label-group {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .status {
+            font-size: 11px;
+            font-style: italic;
+            color: var(--ribbon);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .status.visible {
+            opacity: 1;
+        }
+
+        .btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        button,
+        .filebtn {
+            font-family: var(--mono);
+            font-size: 12px;
+            background: transparent;
+            color: var(--ink);
+            border: 1.5px solid var(--ink);
+            border-radius: 2px;
+            padding: 6px 11px;
+            cursor: pointer;
+            transition: background 0.12s ease, color 0.12s ease;
+        }
+
+        button:hover,
+        .filebtn:hover {
+            background: var(--ink);
+            color: var(--paper);
+        }
+
+        button:focus-visible,
+        .filebtn:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid var(--ribbon);
+            outline-offset: 2px;
+        }
+
+        button.primary {
+            background: var(--ribbon);
+            color: var(--paper);
+            border-color: var(--ribbon);
+        }
+
+        button.primary:hover {
+            background: #8a2e28;
+            border-color: #8a2e28;
+        }
+
+        input[type=file] {
+            display: none;
+        }
+
+        textarea {
+            flex: 1;
+            width: 100%;
+            resize: none;
+            border: none;
+            background: transparent;
+            color: var(--ink);
+            font-family: var(--mono);
+            font-size: 12.5px;
+            line-height: 1.6;
+            padding: 16px;
+            outline-offset: -2px;
+        }
+
+        #dropzone.drag {
+            background: var(--paper-dim);
+            box-shadow: inset 0 0 0 2px var(--ribbon-dim);
+        }
+
+        #output {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-y: auto;
+            padding: 16px;
+            flex: 1;
+        }
+
+        #empty-msg {
+            padding: 16px;
+            color: var(--ink-dim);
+            font-style: normal;
+        }
+
+        #empty-msg .ribbon {
+            color: var(--ribbon);
+        }
+
+        footer {
+            padding: 8px 28px;
+            font-size: 11px;
+            color: var(--ink-dim);
+            border-top: 1px solid var(--rule);
+        }
+
+        .filename-tag {
+            font-size: 11px;
+            color: var(--ink-dim);
+            max-width: 24ch;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--ink-dim);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle input {
+            accent-color: var(--ribbon);
+            cursor: pointer;
+        }
+
+        #source-details {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        #source-details summary {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 16px;
+            cursor: pointer;
+            color: var(--ink-dim);
+            font-size: 12px;
+            border-bottom: 1px dashed var(--rule);
+        }
+
+        #source-details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        #source-details summary::before {
+            content: "▸";
+            color: var(--ribbon);
+            transition: transform 0.12s ease;
+            display: inline-block;
+        }
+
+        #source-details[open] summary::before {
+            transform: rotate(90deg);
+        }
+
+        #source-details summary:hover {
+            color: var(--ink);
+        }
+
+        #source-details textarea {
+            flex: none;
+            height: auto;
+            min-height: 160px;
+            overflow: hidden;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>jsdoc<span class="slash">/</span>md</h1>
+        <p>Drop a .js file, or paste source with JSDoc comments. Get GitHub-flavored markdown docs back — nothing leaves
+            your browser.</p>
+    </header>
+
+    <main>
+        <section id="dropzone">
+            <div class="panel-head" id="source-panel-head">
+                <span class="label-group">
+                    <span class="label">Source</span>
+                    <span class="status" id="md-status"></span>
+                </span>
+                <div class="btns">
+                    <label class="toggle"><input type="checkbox" id="exports-only" checked> Exports only</label>
+                    <label class="toggle"><input type="checkbox" id="sort-by-name"> Sort A→Z</label>
+                    <label class="filebtn" for="file-input">Upload file</label>
+                    <input type="file" id="file-input" accept=".js,.mjs,.cjs,.ts,.jsx,.tsx,text/plain">
+                </div>
+            </div>
+            <details id="source-details" open>
+                <summary id="source-summary">Paste or drop code here</summary>
+                <textarea id="source" spellcheck="false"
+                    placeholder="/**&#10; * A quite wonderful function.&#10; * @param {string} name - who to greet&#10; * @returns {string}&#10; */&#10;export function greet(name) {&#10;  return 'hi ' + name;&#10;}"></textarea>
+            </details>
+        </section>
+
+        <section>
+            <div class="panel-head">
+                <span class="label">Markdown</span>
+                <div class="btns">
+                    <button id="copy-btn">Copy</button>
+                    <button id="download-btn">Download .md</button>
+                </div>
+            </div>
+            <div id="empty-msg"><span class="ribbon">—</span> markdown will appear here once you generate it.</div>
+            <pre id="output" style="display:none;"></pre>
+        </section>
+    </main>
+
+    <footer>Parses common JSDoc tags (@param, @returns, @example, @typedef, @property, @throws, @deprecated, @extends)
+        client-side. "Exports only" keeps functions, classes, and class methods reachable via <code>export</code>,
+        <code>export default</code>, <code>export { }</code>, or CommonJS <code>exports.x</code> /
+        <code>module.exports</code> — @typedef blocks are always kept since they're type-only. Not a full
+        jsdoc-parse-compatible AST — good enough for most real-world files, but exotic syntax may not resolve.</footer>
+
+    <script>
+        (function () {
+            const sourceEl = document.getElementById('source');
+            const outputEl = document.getElementById('output');
+            const emptyMsg = document.getElementById('empty-msg');
+            const fileInput = document.getElementById('file-input');
+            const dropzone = document.getElementById('dropzone');
+            const sourceDetails = document.getElementById('source-details');
+            const sourceSummary = document.getElementById('source-summary');
+            const statusEl = document.getElementById('md-status');
+            let currentFilename = null;
+            let debounceHandle = null;
+            let statusHideHandle = null;
+
+            // ---------- comment / class-context scanning ----------
+
+            function indexToLine(source, idx) {
+                return source.slice(0, idx).split('\n').length - 1;
+            }
+
+            // Walks the whole file tracking class nesting via brace-depth, so we can
+            // tell whether a given line sits inside a class body (and which one).
+            // Also records, per class name, whether that class is exported.
+            function computeClassContext(source, exportedNames) {
+                const lines = source.split('\n');
+                const contextPerLine = new Array(lines.length).fill(null);
+                const classExported = {};
+                const stack = [];
+                let depth = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    contextPerLine[i] = stack.length ? stack[stack.length - 1].name : null;
+                    const classMatch = line.match(/^\s*(export\s+)?(?:default\s+)?class\s+([A-Za-z_$][\w$]*)(?:\s+extends\s+([A-Za-z_$][\w$]*))?/);
+                    const openDepth = depth;
+                    for (const ch of line) {
+                        if (ch === '{') depth++;
+                        else if (ch === '}') {
+                            depth--;
+                            if (stack.length && depth === stack[stack.length - 1].openDepth) {
+                                stack.pop();
+                            }
+                        }
+                    }
+                    if (classMatch) {
+                        stack.push({ name: classMatch[2], extends: classMatch[3] || null, openDepth });
+                        classExported[classMatch[2]] = !!classMatch[1] || exportedNames.has(classMatch[2]);
+                    }
+                }
+                return { lines, contextPerLine, classExported };
+            }
+
+            // Finds names made public via `export { a, b as c }`, `export default x`,
+            // and CommonJS `exports.x = ...` / `module.exports = { ... }`, so doclets
+            // whose declaration itself has no inline `export` keyword are still caught.
+            function collectExportedNames(source) {
+                const names = new Set();
+                let m;
+
+                const namedExportRe = /export\s*\{([^}]*)\}/g;
+                while ((m = namedExportRe.exec(source))) {
+                    m[1].split(',').forEach(part => {
+                        const piece = part.trim();
+                        if (!piece) return;
+                        const asMatch = piece.match(/^([A-Za-z_$][\w$]*)\s+as\s+/);
+                        names.add(asMatch ? asMatch[1] : piece.split(/\s+/)[0]);
+                    });
+                }
+
+                const defaultIdRe = /export\s+default\s+([A-Za-z_$][\w$]*)\s*;/g;
+                while ((m = defaultIdRe.exec(source))) names.add(m[1]);
+
+                const cjsPropRe = /(?:module\.)?exports\.([A-Za-z_$][\w$]*)\s*=/g;
+                while ((m = cjsPropRe.exec(source))) names.add(m[1]);
+
+                const cjsObjRe = /module\.exports\s*=\s*\{([^}]*)\}/g;
+                while ((m = cjsObjRe.exec(source))) {
+                    m[1].split(',').forEach(part => {
+                        const piece = part.trim().split(':')[0].trim();
+                        if (piece) names.add(piece);
+                    });
+                }
+                return names;
+            }
+
+            function extractCommentBlocks(source) {
+                const blocks = [];
+                const re = /\/\*\*([\s\S]*?)\*\//g;
+                let m;
+                while ((m = re.exec(source))) {
+                    blocks.push({ body: m[1], startIdx: m.index, endIdx: re.lastIndex });
+                }
+                return blocks;
+            }
+
+            function findFollowingCodeLine(source, endIdx) {
+                const rest = source.slice(endIdx);
+                const restLines = rest.split('\n');
+                let offset = endIdx;
+                for (const line of restLines) {
+                    const trimmed = line.trim();
+                    if (trimmed !== '' && !trimmed.startsWith('//')) {
+                        return { line, lineIdx: indexToLine(source, offset + line.indexOf(trimmed[0] || '')) };
+                    }
+                    offset += line.length + 1;
+                }
+                return null;
+            }
+
+            // ---------- comment body -> tags ----------
+
+            function stripCommentBody(body) {
+                return body.split('\n').map(l => l.replace(/^\s*\*\/?\s?/, '')).map(l => l.replace(/^\s+$/, ''));
+            }
+
+            function parseTags(body) {
+                const lines = stripCommentBody(body);
+                const description = [];
+                const tags = [];
+                let current = null;
+                for (const rawLine of lines) {
+                    const tagMatch = rawLine.match(/^\s*@(\w+)\s?(.*)$/);
+                    if (tagMatch) {
+                        if (current) tags.push(current);
+                        current = { name: tagMatch[1], text: [tagMatch[2]] };
+                    } else if (current) {
+                        current.text.push(rawLine);
+                    } else {
+                        description.push(rawLine);
+                    }
+                }
+                if (current) tags.push(current);
+                for (const t of tags) {
+                    while (t.text.length && t.text[0].trim() === '') t.text.shift();
+                    while (t.text.length && t.text[t.text.length - 1].trim() === '') t.text.pop();
+                    t.raw = t.text.join('\n');
+                }
+                while (description.length && description[0].trim() === '') description.shift();
+                while (description.length && description[description.length - 1].trim() === '') description.pop();
+                return { description: description.join('\n').trim(), tags };
+            }
+
+            function parseTypedText(raw) {
+                // {Type} rest
+                const m = raw.match(/^\{([^}]*)\}\s*([\s\S]*)$/);
+                if (m) return { type: m[1].trim(), text: m[2].trim() };
+                return { type: null, text: raw.trim() };
+            }
+
+            function parseParamTag(raw) {
+                const typeMatch = raw.match(/^\{([^}]*)\}\s*([\s\S]*)$/);
+                const type = typeMatch ? typeMatch[1].trim() : null;
+                let remainder = (typeMatch ? typeMatch[2] : raw).trim();
+                let name = null, optional = false, defaultValue = null;
+                const bracketMatch = remainder.match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
+                if (bracketMatch) {
+                    optional = true;
+                    let inner = bracketMatch[1];
+                    const eq = inner.indexOf('=');
+                    if (eq !== -1) {
+                        name = inner.slice(0, eq).trim();
+                        defaultValue = inner.slice(eq + 1).trim();
+                    } else {
+                        name = inner.trim();
+                    }
+                    remainder = bracketMatch[2].trim();
+                } else {
+                    const nameMatch = remainder.match(/^(\S+)\s*([\s\S]*)$/);
+                    if (nameMatch) {
+                        name = nameMatch[1];
+                        remainder = nameMatch[2].trim();
+                    }
+                }
+                remainder = remainder.replace(/^-\s*/, '').trim();
+                return { type, name, optional, defaultValue, description: remainder };
+            }
+
+            // ---------- matching a doc-block to the code it documents ----------
+
+            const CONTROL_KEYWORDS = new Set(['if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'else', 'do', 'try', 'constructor', 'super']);
+
+            function matchCodeSymbol(codeLine, classCtx) {
+                const line = codeLine;
+
+                let m = line.match(/^\s*(export\s+)?(?:default\s+)?class\s+([A-Za-z_$][\w$]*)(?:\s+extends\s+([A-Za-z_$][\w$]*))?/);
+                if (m) return { kind: 'class', name: m[2], extends: m[3] || null, params: [], isExported: !!m[1] };
+
+                m = line.match(/^\s*(export\s+)?(?:default\s+)?(?:async\s+)?function\s*\*?\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)/);
+                if (m) return { kind: 'function', name: m[2], params: splitParams(m[3]), isExported: !!m[1] };
+
+                m = line.match(/^\s*(export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\(([^)]*)\)|([A-Za-z_$][\w$]*))\s*=>/);
+                if (m) return { kind: 'function', name: m[2], params: splitParams(m[3] != null ? m[3] : m[4]), isExported: !!m[1] };
+
+                m = line.match(/^\s*(export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s+)?function\s*\*?\s*\(([^)]*)\)/);
+                if (m) return { kind: 'function', name: m[2], params: splitParams(m[3]), isExported: !!m[1] };
+
+                if (classCtx) {
+                    m = line.match(/^\s*(static\s+)?(async\s+)?(\*\s*)?(#?[A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{?/);
+                    if (m && !CONTROL_KEYWORDS.has(m[4])) {
+                        const isCtor = m[4] === 'constructor';
+                        return {
+                            kind: 'method',
+                            name: m[4],
+                            className: classCtx,
+                            isStatic: !!m[1],
+                            isConstructor: isCtor,
+                            params: splitParams(m[5])
+                        };
+                    }
+                    m = line.match(/^\s*(static\s+)?(#?[A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\(([^)]*)\)|([A-Za-z_$][\w$]*))\s*=>/);
+                    if (m) return { kind: 'method', name: m[2], className: classCtx, isStatic: !!m[1], isConstructor: false, params: splitParams(m[3] != null ? m[3] : m[4]) };
+                }
+                return null;
+            }
+
+            function splitParams(paramStr) {
+                if (!paramStr || !paramStr.trim()) return [];
+                return paramStr.split(',').map(p => p.trim().split('=')[0].trim()).filter(Boolean);
+            }
+
+            // ---------- building doclets ----------
+
+            function buildDoclets(source) {
+                const exportedNames = collectExportedNames(source);
+                const { contextPerLine, classExported } = computeClassContext(source, exportedNames);
+                const comments = extractCommentBlocks(source);
+                const doclets = [];
+
+                for (const block of comments) {
+                    const { description, tags } = parseTags(block.body);
+                    const byName = name => tags.filter(t => t.name === name);
+                    const typedefTag = byName('typedef')[0];
+
+                    const following = findFollowingCodeLine(source, block.endIdx);
+                    let symbol = null;
+                    if (following) {
+                        const classCtx = contextPerLine[following.lineIdx] || null;
+                        symbol = matchCodeSymbol(following.line, classCtx);
+                    }
+
+                    if (!typedefTag && !symbol) continue; // not attached to anything we understand
+
+                    const doclet = { description, tags: {} };
+
+                    if (typedefTag) {
+                        const parsed = parseTypedText(typedefTag.raw);
+                        doclet.kind = 'typedef';
+                        doclet.name = parsed.text || (symbol && symbol.name) || 'anonymous';
+                        doclet.type = parsed.type;
+                        doclet.properties = byName('property').map(t => parseParamTag(t.raw));
+                        doclet.exported = true; // type-only; not subject to JS export filtering
+                    } else {
+                        doclet.kind = symbol.kind;
+                        doclet.name = symbol.name;
+                        doclet.className = symbol.className || null;
+                        doclet.isStatic = !!symbol.isStatic;
+                        doclet.isConstructor = !!symbol.isConstructor;
+                        doclet.extendsClass = symbol.extends || null;
+                        doclet.codeParams = symbol.params || [];
+                        doclet.params = byName('param').map(t => parseParamTag(t.raw));
+                        doclet.exported = doclet.kind === 'method'
+                            ? !!classExported[doclet.className]
+                            : !!symbol.isExported || exportedNames.has(doclet.name);
+                    }
+
+                    const returnsTag = byName('returns')[0] || byName('return')[0];
+                    if (returnsTag) doclet.returns = parseTypedText(returnsTag.raw);
+
+                    const throwsTag = byName('throws')[0] || byName('exception')[0];
+                    if (throwsTag) doclet.throws = parseTypedText(throwsTag.raw);
+
+                    const deprecatedTag = byName('deprecated')[0];
+                    if (deprecatedTag) doclet.deprecated = deprecatedTag.raw || true;
+
+                    doclet.examples = byName('example').map(t => t.raw);
+                    const sinceTag = byName('since')[0];
+                    if (sinceTag) doclet.since = sinceTag.raw;
+
+                    doclets.push(doclet);
+                }
+                return doclets;
+            }
+
+            // ---------- rendering markdown ----------
+
+            function escapePipes(s) { return String(s).replace(/\|/g, '\\|'); }
+
+            function paramTable(params) {
+                if (!params || !params.length) return '';
+                let out = '| Param | Type | Description |\n| --- | --- | --- |\n';
+                for (const p of params) {
+                    const nameCell = p.optional
+                        ? (p.defaultValue != null ? `[${p.name}=${p.defaultValue}]` : `[${p.name}]`)
+                        : (p.name || '');
+                    const typeCell = p.type ? `<code>${escapePipes(p.type)}</code>` : '';
+                    out += `| ${escapePipes(nameCell)} | ${typeCell} | ${escapePipes(p.description || '')} |\n`;
+                }
+                return out;
+            }
+
+            function heading(doclet) {
+                if (doclet.kind === 'class') {
+                    return `## ${doclet.name}`;
+                }
+                if (doclet.kind === 'typedef') {
+                    return `## ${doclet.name}` + (doclet.type ? ` : <code>${doclet.type}</code>` : '');
+                }
+                const paramNames = doclet.params.length
+                    ? doclet.params.map(p => p.optional ? `[${p.name}]` : p.name)
+                    : doclet.codeParams;
+                const sig = `(${paramNames.join(', ')})`;
+                let name = doclet.name;
+                if (doclet.kind === 'method' && doclet.className) {
+                    name = doclet.isConstructor
+                        ? `new ${doclet.className}`
+                        : `${doclet.className}${doclet.isStatic ? '.' : '#'}${doclet.name}`;
+                }
+                const returnSuffix = (doclet.returns && doclet.returns.type)
+                    ? ` ⇒ <code>${doclet.returns.type}</code>` : '';
+                return `## ${name}${doclet.isConstructor ? '' : sig}${returnSuffix}`;
+            }
+
+            function kindLine(doclet) {
+                if (doclet.kind === 'class') return `**Kind**: ${doclet.exported ? 'exported class' : 'class'}`;
+                if (doclet.kind === 'typedef') return '**Kind**: typedef';
+                if (doclet.kind === 'method') {
+                    if (doclet.isConstructor) return `**Kind**: constructor of \`${doclet.className}\``;
+                    return `**Kind**: ${doclet.isStatic ? 'static' : 'instance'} method of \`${doclet.className}\``;
+                }
+                return `**Kind**: ${doclet.exported ? 'exported function' : 'module-private function'}`;
+            }
+
+            function renderDoclet(doclet) {
+                const parts = [heading(doclet)];
+
+                if (doclet.deprecated) {
+                    const text = typeof doclet.deprecated === 'string' ? doclet.deprecated : '';
+                    parts.push(`**Deprecated${text ? ':' : ''}** ${text}`.trim());
+                }
+
+                if (doclet.description) parts.push(doclet.description);
+
+                parts.push(kindLine(doclet));
+
+                if (doclet.extendsClass) parts.push(`**Extends**: \`${doclet.extendsClass}\``);
+                if (doclet.since) parts.push(`**Since**: ${doclet.since}`);
+
+                if (doclet.returns && (doclet.returns.type || doclet.returns.text)) {
+                    const t = doclet.returns.type ? `<code>${doclet.returns.type}</code>` : '';
+                    const d = doclet.returns.text ? ` - ${doclet.returns.text}` : '';
+                    parts.push(`**Returns**: ${t}${d}`.trim());
+                }
+                if (doclet.throws && (doclet.throws.type || doclet.throws.text)) {
+                    const t = doclet.throws.type ? `<code>${doclet.throws.type}</code>` : '';
+                    const d = doclet.throws.text ? ` - ${doclet.throws.text}` : '';
+                    parts.push(`**Throws**: ${t}${d}`.trim());
+                }
+
+                if (doclet.kind === 'typedef' && doclet.properties && doclet.properties.length) {
+                    parts.push(paramTable(doclet.properties).trim());
+                } else if (doclet.params && doclet.params.length) {
+                    parts.push(paramTable(doclet.params).trim());
+                }
+
+                if (doclet.examples && doclet.examples.length) {
+                    for (const ex of doclet.examples) {
+                        parts.push(`**Example**\n\`\`\`js\n${ex}\n\`\`\``);
+                    }
+                }
+
+                return parts.filter(Boolean).join('\n\n');
+            }
+
+            function sortKey(d) {
+                const base = d.kind === 'method' && d.className ? `${d.className}.${d.name}` : d.name;
+                return String(base).toLowerCase();
+            }
+
+            function renderMarkdown(doclets, opts) {
+                opts = opts || {};
+                let list = doclets;
+                if (opts.exportsOnly) {
+                    list = doclets.filter(d => d.exported);
+                }
+                if (!list.length) {
+                    return doclets.length
+                        ? '_Nothing exported. Uncheck "Exports only" to see every documented symbol._'
+                        : '_No JSDoc comments attached to a recognizable class, function, method, or @typedef were found in this source._';
+                }
+                if (opts.sortByName) {
+                    list = list.slice().sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+                }
+                return list.map(renderDoclet).join('\n\n* * *\n\n');
+            }
+
+            // ---------- wiring ----------
+
+            function convert() {
+                const source = sourceEl.value;
+                if (!source.trim()) {
+                    emptyMsg.style.display = 'block';
+                    outputEl.style.display = 'none';
+                    hideStatus();
+                    return;
+                }
+                const doclets = buildDoclets(source);
+                const exportsOnly = document.getElementById('exports-only').checked;
+                const sortByName = document.getElementById('sort-by-name').checked;
+                const md = renderMarkdown(doclets, { exportsOnly, sortByName });
+                outputEl.textContent = md;
+                outputEl.style.display = 'block';
+                emptyMsg.style.display = 'none';
+                showStatus('Markdown updated', 1100);
+            }
+
+            function autosizeSource() {
+                sourceEl.style.height = 'auto';
+                sourceEl.style.height = sourceEl.scrollHeight + 'px';
+            }
+
+            function showStatus(text, autoHideMs) {
+                clearTimeout(statusHideHandle);
+                statusEl.textContent = text;
+                statusEl.classList.add('visible');
+                if (autoHideMs) {
+                    statusHideHandle = setTimeout(() => statusEl.classList.remove('visible'), autoHideMs);
+                }
+            }
+
+            function hideStatus() {
+                clearTimeout(statusHideHandle);
+                statusEl.classList.remove('visible');
+            }
+
+            document.getElementById('copy-btn').addEventListener('click', async () => {
+                if (outputEl.style.display === 'none') return;
+                try {
+                    await navigator.clipboard.writeText(outputEl.textContent);
+                    const btn = document.getElementById('copy-btn');
+                    const original = btn.textContent;
+                    btn.textContent = 'Copied';
+                    setTimeout(() => { btn.textContent = original; }, 1200);
+                } catch (e) { /* clipboard unavailable, ignore silently */ }
+            });
+
+            document.getElementById('download-btn').addEventListener('click', () => {
+                if (outputEl.style.display === 'none') return;
+                const blob = new Blob([outputEl.textContent], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const base = currentFilename ? currentFilename.replace(/\.[^.]+$/, '') : 'jsdoc';
+                a.href = url;
+                a.download = `${base}.md`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            });
+
+            function loadFile(file) {
+                currentFilename = file.name;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    sourceEl.value = reader.result;
+                    const lineCount = reader.result.split('\n').length;
+                    sourceSummary.textContent = `${file.name} — ${lineCount} lines — click to view/edit`;
+                    sourceDetails.open = false;
+                    autosizeSource();
+                    convert();
+                };
+                reader.readAsText(file);
+            }
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files[0]) loadFile(fileInput.files[0]);
+            });
+
+            sourceEl.addEventListener('input', () => {
+                autosizeSource();
+                showStatus('Markdown pending…');
+                clearTimeout(debounceHandle);
+                debounceHandle = setTimeout(convert, 400);
+            });
+            sourceDetails.addEventListener('toggle', () => {
+                if (sourceDetails.open) autosizeSource();
+            });
+            autosizeSource();
+
+            document.getElementById('exports-only').addEventListener('change', () => {
+                if (outputEl.style.display !== 'none' || sourceEl.value.trim()) convert();
+            });
+            document.getElementById('sort-by-name').addEventListener('change', () => {
+                if (outputEl.style.display !== 'none' || sourceEl.value.trim()) convert();
+            });
+
+            ['dragenter', 'dragover'].forEach(evt =>
+                dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag'); })
+            );
+            ['dragleave', 'drop'].forEach(evt =>
+                dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag'); })
+            );
+            dropzone.addEventListener('drop', e => {
+                const file = e.dataTransfer.files && e.dataTransfer.files[0];
+                if (file) loadFile(file);
+            });
+        })();
+    </script>
+</body>
+
+</html>
