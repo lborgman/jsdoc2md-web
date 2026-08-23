@@ -1,5 +1,7 @@
 # A web version of jsdoc2md
 
+![Icon](./jsdoc2md-web.svg)
+
 [jsdoc2md](https://github.com/jsdoc2md/jsdoc-to-markdown) is a command line tool that you can install on your desktop pc to extract JsDoc comments in markdown format.
 
 This is a *web version of jsdoc2md*. It is less powerful than the command line tool, but you do not have to install anything to use it. (I wrote it for documenting exports in free open source ES6 JavaScript modules on GitHub.)

@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" sizes="any" href="./jsdoc2md-web.svg">
     <title>jsdoc → md</title>
     <style>
         :root {
@@ -301,6 +302,15 @@
                 transition: none !important;
             }
         }
+
+        #logo {
+            width: 80px;
+            height: 80px;
+            background-image: url(./jsdoc2md-web.svg);
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
     </style>
 </head>
 
@@ -308,8 +318,12 @@
 
     <header>
         <h1>jsdoc<span class="slash">/</span>md</h1>
-        <p>Drop a .js file, or paste source with JSDoc comments. Get GitHub-flavored markdown docs back — nothing leaves
-            your browser.</p>
+        <p>
+            <span id="logo">
+            </span>
+            Drop a .js file, or paste source with JSDoc comments. Get GitHub-flavored markdown docs back — nothing leaves
+            your browser.
+        </p>
     </header>
 
     <main>
