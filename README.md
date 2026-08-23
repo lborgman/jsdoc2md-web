@@ -7,7 +7,7 @@
 This is a *web version of jsdoc2md*. It is less powerful than the command line tool, but you do not have to install anything to use it. (I wrote it for documenting exports in free open source ES6 JavaScript modules on GitHub.)
 
 > **This web version was created in a [Claude AI chat](https://claude.ai/share/dc67329f-c01d-40f6-99b6-a5a361bcb803).**
-So far I have made no changes myself. I just told Claude what I want.
+I just told Claude what I want.  So far I have only added the icon myself.
 
 ## Test it
 
