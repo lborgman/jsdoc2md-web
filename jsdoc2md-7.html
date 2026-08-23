@@ -304,8 +304,10 @@
         }
 
         #logo {
-            width: 80px;
-            height: 80px;
+            display: block;
+            float: inline-start;
+            width: 100px;
+            height: 100px;
             background-image: url(./jsdoc2md-web.svg);
             background-position: center;
             background-size: contain;
@@ -317,12 +319,11 @@
 <body>
 
     <header>
-        <h1>jsdoc<span class="slash">/</span>md</h1>
+        <h1>jsdoc to markdown web app</h1>
         <p>
-            <span id="logo">
-            </span>
-            Drop a .js file, or paste source with JSDoc comments. Get GitHub-flavored markdown docs back — nothing leaves
-            your browser.
+            <span id="logo"></span>
+            Drop a JavaScript ES6 module file, or paste source with JSDoc comments. Get GitHub-flavored markdown docs back.
+            (<a href="https://lborgman.github.io/jsdoc2md-web/">Documentation</a>)
         </p>
     </header>
 
